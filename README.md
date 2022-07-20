@@ -4,6 +4,8 @@ The emergence of altruism as a social norm
 ## Maintainers
 
 [@AmadouSarjoJallow](https://github.com/AMS-JR).
+[@Akshay](https://github.com/akshay-paliwal).
+[@Gauthier](https://github.com/gauthier909).
 
 ## Article 
 
