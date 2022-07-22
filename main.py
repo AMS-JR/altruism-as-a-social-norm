@@ -6,6 +6,8 @@
 # Donations and Aspirations are in range [0, endowment]
 # Individual aspirations A[i] are initialised randomly following a uniform distribution U[0, 1] and
 # initial donations are constrained to Di = endowment − A[i]
+# stimuli s_i is in range [−1, 1]
+# donations are bounded
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,35 +27,52 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
     :param epsilon: for stochasticity
     :return: average_aspirations, average_donations
     """
-    average_aspirations = np.array([])
-    average_donations = np.array([])
-
     for episode in range(episodes):
         print(episode)
         stationary_state = False
-        # Aspirations and Donations Space
-        A = np.zeros((time_steps+1, N))    #A[i]
-        D = np.zeros((time_steps+1, N))    #D[i]
+        # Aspirations and Donations Space -> can i have just 1D-array of N for each(A and D)? test it to see results are same
+        A = np.zeros((time_steps+1, N))
+        D = np.zeros((time_steps+1, N))
         # Initial aspirations and donations
         A[0] = np.random.uniform(0, 1, N)
         D[0] = endowment - A[0]
-        print(A)
-        print(D)
-        for i in time_steps:
+        # print(A)
+        # print(D)
+        for t in range(time_steps):
             # pairs_of_individuals[[Dictator,Recipient]]
-            pairs_of_individuals = np.arange(N).reshape(N/2,2)  # 1000 individuals
+            pairs_of_individuals = np.arange(N).reshape(int(N/2),2)  # 1000 individuals
             np.random.shuffle(pairs_of_individuals.flat)
-            for j in range(len(pairs_of_individuals)):
-                # calulate S[i]
+            for i in range(len(pairs_of_individuals)):
+                # calulate S_i -> stimuli for recipient
+                if( endowment != A[t][pairs_of_individuals[i][1]]):
+                    s =  (D[t][pairs_of_individuals[i][0]] - A[t][pairs_of_individuals[i][1]])/(endowment - A[t][pairs_of_individuals[i][1]])
+                    if s < -1:
+                        s = -1
+                    if s > 1:
+                        s = 1
+                else:
+                    s = 0
+                # update A[i+1]
+                if(s >= 0):
+                    change_in_aspiration = ((endowment - A[t][pairs_of_individuals[i][1]]) * l * s)
+                    A[t+1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
+                else:
+                    change_in_aspiration = (A[t][pairs_of_individuals[i][1]] * l * s)
+                    A[t + 1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
+                # update D[i+1]
+                payoff = (h * D[t][pairs_of_individuals[i][0]])
+                D[t+1][pairs_of_individuals[i][1]] = ((1 - h) * D[t][pairs_of_individuals[i][1]]) + payoff
+                D[t+1][pairs_of_individuals[i][1]] = max(0, min(D[t+1][pairs_of_individuals[i][1]], (endowment - A[t + 1][pairs_of_individuals[i][1]])))
+                #aspirations and donations of dictator individuals are unchanged at the beginning of next time step
+                # alternative will be to initialise entire A and D spaces with np.random.uniform(0, 1, N) and remove this part -> explore in testing
+                A[t+1][pairs_of_individuals[i][0]] = A[t][pairs_of_individuals[i][0]]
+                D[t+1][pairs_of_individuals[i][0]] = D[t][pairs_of_individuals[i][0]]
 
-                # update A[i]
-
-                # update D[i]
+            # Check for Stationary state after each episode to end iterations
 
             # find averages
-
-            # append averages
-
+            average_aspirations = np.mean(A, axis=0)
+            average_donations = np.mean(D, axis=0)
         return average_aspirations, average_donations
 
 
@@ -69,5 +88,7 @@ if __name__ == '__main__':
     endowment = 1
     h = 0.2
     l = 0.2
-    average_aspiration, average_donation = play(N,time_steps, model, endowment, h, l, transient_time_steps, 0.01)
-    print(average_aspiration, average_donation)
+    average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 0.01)
+    print("average_aspiration: ", average_aspiration)
+    # print("average_donation", average_donation)
+    # histograms using matplotlib.pyplot

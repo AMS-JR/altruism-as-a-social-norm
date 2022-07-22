@@ -34,7 +34,7 @@
 # A[i] (Aspiration level): represents the proportion of the endowment they expect to receive when playing as a
 # recipient
 
-# Each individual i playing R (recipient) receives a stimuli s[i] in [−1, 1]
+# Each individual i playing R (recipient) receives a stimuli s_i in [−1, 1]
 # as a consequence of her dictator’s decisions.
 
 # When the difference between the donation received (payoff π[i]) and her aspiration level is positive,
