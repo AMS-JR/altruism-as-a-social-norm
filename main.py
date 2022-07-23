@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import time
 import random
 
-def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 10000, epsilon = 0.0 ):
+def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, standard_deviation ):
     """
     :param N: number of individuals
     :param episodes: number of rounds
@@ -24,16 +24,17 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
     :param h: habituation parameter h ∈ [0, 1]
     :param l: learning rate l ∈ [0, 1]
     :param transient_time_steps:
-    :param epsilon: for stochasticity
+    :param standard_deviation: for stochasticity
     :return: average_aspirations, average_donations
     """
     average_aspirations = []
     average_donations = []
     stationary_counter = 0
     stationary_state = False
+    free_rider = random.randint(1000)
     for episode in range(episodes):
         print(episode)
-        # Aspirations and Donations Space -> can i have just 1D-array of N for each(A and D)? test it to see results are same
+        # Aspirations and Donations Space -> can i have just 1D-array of N for each(A and D)? test if results are same
         A = np.zeros((time_steps+1, N))
         D = np.zeros((time_steps+1, N))
         # Initial aspirations and donations
@@ -47,9 +48,28 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
             np.random.shuffle(pairs_of_individuals.flat)
 
             for i in range(len(pairs_of_individuals)):
-                # calulate S_i -> stimuli for recipient
-                if( endowment != A[t][pairs_of_individuals[i][1]]):
-                    s =  (D[t][pairs_of_individuals[i][0]] - A[t][pairs_of_individuals[i][1]])/(endowment - A[t][pairs_of_individuals[i][1]])
+                # update D[i+1]
+                payoff = (h * D[t][pairs_of_individuals[i][0]])
+                D[t+1][pairs_of_individuals[i][1]] = ((1 - h) * D[t][pairs_of_individuals[i][1]]) + payoff
+                D[t+1][pairs_of_individuals[i][1]] = max(0, min(D[t + 1][pairs_of_individuals[i][1]], (endowment - A[t+1][pairs_of_individuals[i][1]])))
+                if model == "stochastic":
+                    # for testing, put noise=standard_deviation as is in the article i believe
+                    noise = np.random.normal(0, standard_deviation)
+                    D[t+1][pairs_of_individuals[i][1]] = (1 + noise) * D[t+1][pairs_of_individuals[i][1]]
+                elif model == "envious":
+                    prob_estimate = np.random.uniform(0.0, high=1.0, size=None)
+                    if prob_estimate <= 0.05:
+                        D[t + 1][pairs_of_individuals[i][1]] = min(D[t + 1][pairs_of_individuals[i][1]], 0.5)
+                elif model == "free-riders":
+                    if pairs_of_individuals[i][0] == free_rider:    # Dictator is a free-rider
+                        D[t][pairs_of_individuals[i][0]] = 0
+                    if pairs_of_individuals[i][1] == free_rider:    # Recipient is a free-rider
+                        D[t+1][pairs_of_individuals[i][1]] = 0
+                else:
+                    pass
+                # calculate stimuli for recipient
+                if endowment != A[t][pairs_of_individuals[i][1]]:
+                    s = (D[t][pairs_of_individuals[i][0]] - A[t][pairs_of_individuals[i][1]])/(endowment - A[t][pairs_of_individuals[i][1]])
                     if s < -1:
                         s = -1
                     if s > 1:
@@ -57,34 +77,31 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
                 else:
                     s = 0
                 # update A[i+1]
-                if(s >= 0):
+                if s >= 0:
                     change_in_aspiration = ((endowment - A[t][pairs_of_individuals[i][1]]) * l * s)
                     A[t+1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
                 else:
                     change_in_aspiration = (A[t][pairs_of_individuals[i][1]] * l * s)
                     A[t + 1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
-                # update D[i+1]
-                payoff = (h * D[t][pairs_of_individuals[i][0]])
-                D[t+1][pairs_of_individuals[i][1]] = ((1 - h) * D[t][pairs_of_individuals[i][1]]) + payoff
-                D[t+1][pairs_of_individuals[i][1]] = max(0, min(D[t+1][pairs_of_individuals[i][1]], (endowment - A[t + 1][pairs_of_individuals[i][1]])))
-                #aspirations and donations of dictator individuals are unchanged at the beginning of next time step
+
+                # aspirations and donations of dictator individuals are unchanged at the beginning of next time step
                 A[t+1][pairs_of_individuals[i][0]] = A[t][pairs_of_individuals[i][0]]
                 D[t+1][pairs_of_individuals[i][0]] = D[t][pairs_of_individuals[i][0]]
         stationary_counter += 1
         # Check for Stationary state after each episode to end iterations
-        if((stationary_counter)*time_steps >= transient_time_steps):
+        if stationary_counter*time_steps >= transient_time_steps:
             # play with the slice and write something better
             increment = 4
             while increment < stationary_counter:
-                mean_donations_forward = np.mean(D[int(increment*(time_steps/(stationary_counter))):], axis=0)
+                mean_donations_forward = np.mean(D[int(increment*(time_steps/stationary_counter)):], axis=0)
                 slope = np.max(mean_donations_forward) - np.min(mean_donations_forward)
                 print("slope: ", slope)
                 stationary_state = slope < 10**(-4)
                 increment += 1
-                if(stationary_state):
+                if stationary_state:
                     break
 
-        if(stationary_state):
+        if stationary_state:
             break
         # find averages
         average_aspirations.append(np.mean(A, axis=0))
