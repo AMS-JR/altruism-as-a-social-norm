@@ -68,7 +68,6 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
                 D[t+1][pairs_of_individuals[i][1]] = ((1 - h) * D[t][pairs_of_individuals[i][1]]) + payoff
                 D[t+1][pairs_of_individuals[i][1]] = max(0, min(D[t+1][pairs_of_individuals[i][1]], (endowment - A[t + 1][pairs_of_individuals[i][1]])))
                 #aspirations and donations of dictator individuals are unchanged at the beginning of next time step
-                # alternative will be to initialise entire A and D spaces with np.random.uniform(0, 1, N) and remove this part -> explore in testing
                 A[t+1][pairs_of_individuals[i][0]] = A[t][pairs_of_individuals[i][0]]
                 D[t+1][pairs_of_individuals[i][0]] = D[t][pairs_of_individuals[i][0]]
         stationary_counter += 1
