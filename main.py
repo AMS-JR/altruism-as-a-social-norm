@@ -27,9 +27,12 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
     :param epsilon: for stochasticity
     :return: average_aspirations, average_donations
     """
+    average_aspirations = []
+    average_donations = []
+    stationary_counter = 0
+    stationary_state = False
     for episode in range(episodes):
         print(episode)
-        stationary_state = False
         # Aspirations and Donations Space -> can i have just 1D-array of N for each(A and D)? test it to see results are same
         A = np.zeros((time_steps+1, N))
         D = np.zeros((time_steps+1, N))
@@ -37,11 +40,12 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
         A[0] = np.random.uniform(0, 1, N)
         D[0] = endowment - A[0]
         # print(A)
-        # print(D)
+        print(D)
         for t in range(time_steps):
             # pairs_of_individuals[[Dictator,Recipient]]
             pairs_of_individuals = np.arange(N).reshape(int(N/2),2)  # 1000 individuals
             np.random.shuffle(pairs_of_individuals.flat)
+
             for i in range(len(pairs_of_individuals)):
                 # calulate S_i -> stimuli for recipient
                 if( endowment != A[t][pairs_of_individuals[i][1]]):
@@ -67,13 +71,28 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
                 # alternative will be to initialise entire A and D spaces with np.random.uniform(0, 1, N) and remove this part -> explore in testing
                 A[t+1][pairs_of_individuals[i][0]] = A[t][pairs_of_individuals[i][0]]
                 D[t+1][pairs_of_individuals[i][0]] = D[t][pairs_of_individuals[i][0]]
+        stationary_counter += 1
+        # Check for Stationary state after each episode to end iterations
+        if((stationary_counter)*time_steps >= transient_time_steps):
+            # play with the slice and write something better
+            increment = 4
+            while increment < stationary_counter:
+                mean_donations_forward = np.mean(D[int(increment*(time_steps/(stationary_counter))):], axis=0)
+                slope = np.max(mean_donations_forward) - np.min(mean_donations_forward)
+                print("slope: ", slope)
+                stationary_state = slope < 10**(-4)
+                increment += 1
+                if(stationary_state):
+                    break
 
-            # Check for Stationary state after each episode to end iterations
-
-            # find averages
-            average_aspirations = np.mean(A, axis=0)
-            average_donations = np.mean(D, axis=0)
-        return average_aspirations, average_donations
+        if(stationary_state):
+            break
+        # find averages
+        average_aspirations.append(np.mean(A, axis=0))
+        average_donations.append(np.mean(D, axis=0))
+    f_average_aspirations = np.mean(np.array(average_aspirations), axis=0)
+    f_average_donations = np.mean(np.array(average_donations), axis=0)
+    return f_average_aspirations, f_average_donations
 
 
 
@@ -81,7 +100,7 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps= 
 if __name__ == '__main__':
     print('PyCharm')
     N = 1000
-    episodes = 100
+    episodes = 20
     time_steps = 1000
     transient_time_steps = 10000
     model = "deterministic"
@@ -90,5 +109,7 @@ if __name__ == '__main__':
     l = 0.2
     average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 0.01)
     print("average_aspiration: ", average_aspiration)
+    print(len(average_aspiration))
+    print(max(average_aspiration), min(average_aspiration))
     # print("average_donation", average_donation)
     # histograms using matplotlib.pyplot
