@@ -31,9 +31,9 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
     average_donations = []
     stationary_counter = 0
     stationary_state = False
-    free_rider = random.randint(1000)
+    free_rider = random.randint(0, N)
     for episode in range(episodes):
-        print(episode)
+        print(f"episode: {episode}")
         # Aspirations and Donations Space -> can i have just 1D-array of N for each(A and D)? test if results are same
         A = np.zeros((time_steps+1, N))
         D = np.zeros((time_steps+1, N))
@@ -41,10 +41,10 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
         A[0] = np.random.uniform(0, 1, N)
         D[0] = endowment - A[0]
         # print(A)
-        print(D)
+        # print(D)
         for t in range(time_steps):
             # pairs_of_individuals[[Dictator,Recipient]]
-            pairs_of_individuals = np.arange(N).reshape(int(N/2),2)  # 1000 individuals
+            pairs_of_individuals = np.arange(N).reshape(int(N/2), 2)  # 1000 individuals
             np.random.shuffle(pairs_of_individuals.flat)
 
             for i in range(len(pairs_of_individuals)):
@@ -59,12 +59,15 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
                 elif model == "envious":
                     prob_estimate = np.random.uniform(0.0, high=1.0, size=None)
                     if prob_estimate <= 0.05:
+                        # print(f"prob_estimate less ~ Donation: {D[t + 1][pairs_of_individuals[i][1]]}")
                         D[t + 1][pairs_of_individuals[i][1]] = min(D[t + 1][pairs_of_individuals[i][1]], 0.5)
                 elif model == "free-riders":
                     if pairs_of_individuals[i][0] == free_rider:    # Dictator is a free-rider
                         D[t][pairs_of_individuals[i][0]] = 0
+                        # print(f"free-riders ~ Dictator: {D[t][pairs_of_individuals[i][0]]}")
                     if pairs_of_individuals[i][1] == free_rider:    # Recipient is a free-rider
                         D[t+1][pairs_of_individuals[i][1]] = 0
+                        # print(f"free-riders ~ Recipient: {D[t+1][pairs_of_individuals[i][1]]}")
                 else:
                     pass
                 # calculate stimuli for recipient
@@ -91,6 +94,8 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
         # Check for Stationary state after each episode to end iterations
         if stationary_counter*time_steps >= transient_time_steps:
             # play with the slice and write something better
+            print(f"Aspirations: {A}")
+            print(f"Donations: {D}")
             increment = 4
             while increment < stationary_counter:
                 mean_donations_forward = np.mean(D[int(increment*(time_steps/stationary_counter)):], axis=0)
@@ -111,10 +116,10 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
     return f_average_aspirations, f_average_donations
 
 
-
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print('PyCharm')
+    ls = np.array([0.2, 0.4, 0.6, 0.8])
+    hs = np.array([0.2, 0.4, 0.6, 0.8])
     N = 1000
     episodes = 20
     time_steps = 1000
@@ -123,9 +128,62 @@ if __name__ == '__main__':
     endowment = 1
     h = 0.2
     l = 0.2
-    average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 0.01)
-    print("average_aspiration: ", average_aspiration)
-    print(len(average_aspiration))
-    print(max(average_aspiration), min(average_aspiration))
-    # print("average_donation", average_donation)
-    # histograms using matplotlib.pyplot
+    num_runs = 16
+    freq_limit = 10
+    frequencies_aspirations = []
+    frequencies_donations = []
+    for j in range(4):
+        for k in range(4):
+            # for i in range(num_runs):
+            print(f"run: {(j+1)} ~ {(k+1)}")
+            aspirations_frequency = np.zeros(freq_limit)
+            donations_frequency = np.zeros(freq_limit)
+
+            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.01)
+            # print("average_aspiration: ", average_aspiration)
+            # print(len(average_aspiration))
+            # print(max(average_aspiration), min(average_aspiration))
+            # print("average_donation", average_donation)
+            for i in range(freq_limit):
+                aspirations_frequency[i] = (average_aspiration[(average_aspiration >= (i / freq_limit)) & (average_aspiration < ((i + 1) / freq_limit))].size) / average_aspiration.size
+                donations_frequency[i] = (average_donation[(average_donation >= (i / freq_limit)) & (average_donation < ((i + 1) / freq_limit))].size) / average_donation.size
+            frequencies_aspirations.append(aspirations_frequency)
+            frequencies_donations.append(donations_frequency)
+
+    frequencies_aspirations = np.array(frequencies_aspirations)
+    frequencies_donations = np.array(frequencies_donations)
+    print("frequencies_aspirations: ", frequencies_aspirations)
+    # plotting bars
+    x = np.arange(freq_limit)
+    y = np.linspace(0.00, 1.00, 5)
+    width = 0.35  # the width of the bars
+    fig, axs = plt.subplots(4, 4, figsize=(5, 2.7))
+    def my_plotter(axs, data1, data2, label, pair):
+        """
+        A helper function to make a graph.
+        """
+        width = 0.35  # the width of the bars
+        out = axs[pair[0], pair[1]].bar(data1, data2, width, label=label)
+        if pair[1] == 0:
+            axs[pair[0], pair[1]].set_ylabel('frequency')
+            axs[pair[0], pair[1]].set_yticks(y)
+        if pair[1] != 0:
+            axs[pair[0], pair[1]].yaxis.set_visible(False)
+        if pair[0] == 3:
+            axs[pair[0], pair[1]].set_xlabel('tenths of endowment')
+            axs[pair[0], pair[1]].set_xticks(x)
+        if pair[0] != 3:
+            axs[pair[0], pair[1]].xaxis.set_visible(False)
+        if pair[0] == 3 and pair[1] == 3:
+            axs[pair[0], pair[1]].legend()
+        axs[pair[0], pair[1]].set_title('l=' + str(ls[pair[0]]) + ' and h=' + str(hs[pair[1]]))
+        return out
+
+    i = 0
+    for j in range(4):
+        for k in range(4):
+            rects1 = my_plotter(axs, x - width / 2, frequencies_aspirations[i], "Aspirations", (j, k))
+            rects2 = my_plotter(axs, x + width / 2, frequencies_donations[i], "Donations", (j, k))
+            i +=1
+
+    plt.show()
