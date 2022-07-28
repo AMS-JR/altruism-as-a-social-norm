@@ -183,5 +183,5 @@ if __name__ == '__main__':
             rects1 = my_plotter(axs, x - width / 2, frequencies_aspirations[i], "Aspirations", (j, k))
             rects2 = my_plotter(axs, x + width / 2, frequencies_donations[i], "Donations", (j, k))
             i +=1
-
+    plt.subplots_adjust(hspace=0.35)
     plt.show()
