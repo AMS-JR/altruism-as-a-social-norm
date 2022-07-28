@@ -48,25 +48,23 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
             np.random.shuffle(pairs_of_individuals.flat)
 
             for i in range(len(pairs_of_individuals)):
-                # update D[i+1]
-                payoff = (h * D[t][pairs_of_individuals[i][0]])
-                D[t+1][pairs_of_individuals[i][1]] = ((1 - h) * D[t][pairs_of_individuals[i][1]]) + payoff
-                D[t+1][pairs_of_individuals[i][1]] = max(0, min(D[t + 1][pairs_of_individuals[i][1]], (endowment - A[t+1][pairs_of_individuals[i][1]])))
                 if model == "stochastic":
                     # for testing, put noise=standard_deviation as is in the article i believe
                     noise = np.random.normal(0, standard_deviation)
-                    D[t+1][pairs_of_individuals[i][1]] = (1 + noise) * D[t+1][pairs_of_individuals[i][1]]
+                    D[t][pairs_of_individuals[i][0]] = (1 + noise) * D[t][pairs_of_individuals[i][0]]
+                    D[t][pairs_of_individuals[i][1]] = (1 + noise) * D[t][pairs_of_individuals[i][1]]
                 elif model == "envious":
                     prob_estimate = np.random.uniform(0.0, high=1.0, size=None)
                     if prob_estimate <= 0.05:
                         # print(f"prob_estimate less ~ Donation: {D[t + 1][pairs_of_individuals[i][1]]}")
-                        D[t + 1][pairs_of_individuals[i][1]] = min(D[t + 1][pairs_of_individuals[i][1]], 0.5)
+                        D[t][pairs_of_individuals[i][0]] = min(D[t][pairs_of_individuals[i][0]], 0.5)
+                        D[t][pairs_of_individuals[i][1]] = min(D[t][pairs_of_individuals[i][1]], 0.5)
                 elif model == "free-riders":
                     if pairs_of_individuals[i][0] == free_rider:    # Dictator is a free-rider
                         D[t][pairs_of_individuals[i][0]] = 0
                         # print(f"free-riders ~ Dictator: {D[t][pairs_of_individuals[i][0]]}")
                     if pairs_of_individuals[i][1] == free_rider:    # Recipient is a free-rider
-                        D[t+1][pairs_of_individuals[i][1]] = 0
+                        D[t][pairs_of_individuals[i][1]] = 0
                         # print(f"free-riders ~ Recipient: {D[t+1][pairs_of_individuals[i][1]]}")
                 else:
                     pass
@@ -85,8 +83,12 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
                     A[t+1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
                 else:
                     change_in_aspiration = (A[t][pairs_of_individuals[i][1]] * l * s)
-                    A[t + 1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
-
+                    A[t+1][pairs_of_individuals[i][1]] = A[t][pairs_of_individuals[i][1]] + change_in_aspiration
+                # update D[i+1]
+                payoff = (h * D[t][pairs_of_individuals[i][0]])
+                D[t+1][pairs_of_individuals[i][1]] = ((1 - h) * D[t][pairs_of_individuals[i][1]]) + payoff
+                D[t+1][pairs_of_individuals[i][1]] = max(0, min(D[t+1][pairs_of_individuals[i][1]], (endowment - A[t+1][pairs_of_individuals[i][1]])))
+                # ifelifelse
                 # aspirations and donations of dictator individuals are unchanged at the beginning of next time step
                 A[t+1][pairs_of_individuals[i][0]] = A[t][pairs_of_individuals[i][0]]
                 D[t+1][pairs_of_individuals[i][0]] = D[t][pairs_of_individuals[i][0]]
@@ -124,14 +126,13 @@ if __name__ == '__main__':
     episodes = 20
     time_steps = 1000
     transient_time_steps = 10000
-    model = "deterministic"
+    model = "stochastic"
     endowment = 1
-    h = 0.2
-    l = 0.2
     num_runs = 16
     freq_limit = 10
     frequencies_aspirations = []
     frequencies_donations = []
+
     for j in range(4):
         for k in range(4):
             # for i in range(num_runs):
@@ -139,11 +140,8 @@ if __name__ == '__main__':
             aspirations_frequency = np.zeros(freq_limit)
             donations_frequency = np.zeros(freq_limit)
 
-            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.01)
-            # print("average_aspiration: ", average_aspiration)
-            # print(len(average_aspiration))
-            # print(max(average_aspiration), min(average_aspiration))
-            # print("average_donation", average_donation)
+            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.1)
+
             for i in range(freq_limit):
                 aspirations_frequency[i] = (average_aspiration[(average_aspiration >= (i / freq_limit)) & (average_aspiration < ((i + 1) / freq_limit))].size) / average_aspiration.size
                 donations_frequency[i] = (average_donation[(average_donation >= (i / freq_limit)) & (average_donation < ((i + 1) / freq_limit))].size) / average_donation.size
