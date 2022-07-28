@@ -126,7 +126,7 @@ if __name__ == '__main__':
     episodes = 20
     time_steps = 1000
     transient_time_steps = 10000
-    model = "stochastic"
+    model = "deterministic"
     endowment = 1
     num_runs = 16
     freq_limit = 10
