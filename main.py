@@ -103,7 +103,7 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
             #     # print(f"Donations: {D}")
             mean_donations_forward = np.mean(D[((stationary_counter - 1)*time_steps):], axis=0)
             slope = (np.max(mean_donations_forward) - np.min(mean_donations_forward))
-            print("slope: ", slope)
+            # print(f"slope ~ {stationary_counter}: {slope}")
             #     stationary_state = slope < 10**(-4)
             #     if stationary_state:
             #         print("Stable Donations: ", D)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     episodes = 50
     time_steps = 1000
     transient_time_steps = 10000
-    model = "deterministic"
+    model = "stochastic"
     endowment = 1
     num_runs = 16
     freq_limit = 10
@@ -155,6 +155,7 @@ if __name__ == '__main__':
     frequencies_aspirations = np.array(frequencies_aspirations)
     frequencies_donations = np.array(frequencies_donations)
     print("frequencies_aspirations: ", frequencies_aspirations)
+
     # plotting bars
     x = np.arange(freq_limit)
     y = np.linspace(0.00, 1.00, 5)
@@ -189,4 +190,19 @@ if __name__ == '__main__':
             i +=1
 
     plt.subplots_adjust(hspace=0.35)
+    plt.show()
+
+    # Uncomment for the last part of the article
+    # x = np.arange(freq_limit)
+    # width = 0.35
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x - width / 2, frequencies_aspirations.mean(axis=0), width, label='Aspirations')
+    rects2 = ax.bar(x + width / 2, frequencies_donations.mean(axis=0), width, label='Donations')
+
+    ax.set_ylabel('frequency')
+    ax.set_xlabel('tenths of endowment')
+    ax.set_title('Final averaged distribution \nover all parameters in the general regime')
+    ax.set_xticks(x)
+    ax.legend()
+    fig.tight_layout()
     plt.show()
