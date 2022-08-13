@@ -102,8 +102,8 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
             #     # print(f"Aspirations: {A}")
             #     # print(f"Donations: {D}")
             mean_donations_forward = np.mean(D[((stationary_counter - 1)*time_steps):], axis=0)
-            slope = (np.max(mean_donations_forward) - np.min(mean_donations_forward))/N
-            #     print("slope: ", slope)
+            slope = (np.max(mean_donations_forward) - np.min(mean_donations_forward))
+            print("slope: ", slope)
             #     stationary_state = slope < 10**(-4)
             #     if stationary_state:
             #         print("Stable Donations: ", D)
@@ -127,10 +127,10 @@ if __name__ == '__main__':
     ls = np.array([0.2, 0.4, 0.6, 0.8])
     hs = np.array([0.2, 0.4, 0.6, 0.8])
     N = 1000
-    episodes = 15
+    episodes = 50
     time_steps = 1000
     transient_time_steps = 10000
-    model = "deterministic."
+    model = "deterministic"
     endowment = 1
     num_runs = 16
     freq_limit = 10
