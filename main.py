@@ -97,20 +97,18 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
                     D[t+1][pairs_of_individuals[i][0]] = D[t][pairs_of_individuals[i][0]]
             stationary_counter += 1
             # Check for Stationary state after each episode to end iterations
-            if stationary_counter*time_steps >= transient_time_steps:
-                # play with the slice and write something better
-                # print(f"Aspirations: {A}")
-                # print(f"Donations: {D}")
-                increment = 5
-                while increment < stationary_counter:
-                    mean_donations_forward = np.mean(D[((stationary_counter - 1)*time_steps) + int(increment*(time_steps/stationary_counter)):], axis=0)
-                    slope = np.max(mean_donations_forward) - np.min(mean_donations_forward)
-                    print("slope: ", slope)
-                    stationary_state = slope < 10**(-4)
-                    increment += 1
-                    if stationary_state:
-                        print("Stable Donations: ", D)
-                        break
+            # if stationary_counter*time_steps >= transient_time_steps:
+            #     # play with the slice and write something better
+            #     # print(f"Aspirations: {A}")
+            #     # print(f"Donations: {D}")
+            mean_donations_forward = np.mean(D[((stationary_counter - 1)*time_steps):], axis=0)
+            slope = (np.max(mean_donations_forward) - np.min(mean_donations_forward))/N
+            #     print("slope: ", slope)
+            #     stationary_state = slope < 10**(-4)
+            #     if stationary_state:
+            #         print("Stable Donations: ", D)
+            #         break
+            stationary_state = stationary_counter*time_steps >= transient_time_steps or slope < 10**(-4)
             if not stationary_state:
                 A = np.resize(A, ((stationary_counter+1)*time_steps + 1, N))
                 D = np.resize(D, ((stationary_counter+1)*time_steps + 1, N))
@@ -129,10 +127,10 @@ if __name__ == '__main__':
     ls = np.array([0.2, 0.4, 0.6, 0.8])
     hs = np.array([0.2, 0.4, 0.6, 0.8])
     N = 1000
-    episodes = 50
+    episodes = 15
     time_steps = 1000
     transient_time_steps = 10000
-    model = "deterministic"
+    model = "deterministic."
     endowment = 1
     num_runs = 16
     freq_limit = 10
@@ -146,7 +144,7 @@ if __name__ == '__main__':
             aspirations_frequency = np.zeros(freq_limit)
             donations_frequency = np.zeros(freq_limit)
 
-            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.1)
+            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.01)
 
             for i in range(freq_limit):
                 aspirations_frequency[i] = (average_aspiration[(average_aspiration >= (i / freq_limit)) & (average_aspiration < ((i + 1) / freq_limit))].size) / average_aspiration.size
