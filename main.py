@@ -55,6 +55,7 @@ def play(N, episodes, time_steps, model, endowment, h, l, transient_time_steps, 
                         # for testing, put noise=standard_deviation as is in the article i believe
                         noise = np.random.normal(0, standard_deviation)
                         D[t][pairs_of_individuals[i][0]] = (1 + noise) * D[t][pairs_of_individuals[i][0]]
+                        noise = np.random.normal(0, standard_deviation)
                         D[t][pairs_of_individuals[i][1]] = (1 + noise) * D[t][pairs_of_individuals[i][1]]
                     if model == "envious":
                         prob_estimate = np.random.uniform(0.0, high=1.0, size=None)
@@ -130,7 +131,7 @@ if __name__ == '__main__':
     episodes = 50
     time_steps = 1000
     transient_time_steps = 10000
-    model = "stochastic"
+    model = "free-riders"
     endowment = 1
     num_runs = 16
     freq_limit = 10
@@ -144,7 +145,7 @@ if __name__ == '__main__':
             aspirations_frequency = np.zeros(freq_limit)
             donations_frequency = np.zeros(freq_limit)
 
-            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.01)
+            average_aspiration, average_donation = play(N, episodes, time_steps, model, endowment, hs[k], ls[j], transient_time_steps, 0.1)
 
             for i in range(freq_limit):
                 aspirations_frequency[i] = (average_aspiration[(average_aspiration >= (i / freq_limit)) & (average_aspiration < ((i + 1) / freq_limit))].size) / average_aspiration.size
